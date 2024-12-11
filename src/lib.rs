@@ -1,14 +1,38 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
+
+mod deposite;
+mod borrow;
+use borsh::{BorshDeserialize, BorshSerialize};
+use  solana_program::{entrypoint, msg};
+use solana_program::{
+    program_error::ProgramError::InvalidInstructionData,
+account_info::AccountInfo,entrypoint::ProgramResult,pubkey::Pubkey
+};
+
+
+
+entrypoint!(process_instruction);
+
+
+#[derive(BorshSerialize,BorshDeserialize,Debug)]
+enum Initializer {
+    HandleDeposit(Vec<u8>),
+    HandleBorrow(Vec<u8>)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub fn process_instruction(program_id:&Pubkey,accounts:&[AccountInfo],instruction_data:&[u8]) ->ProgramResult{
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+
+    let instruction = Initializer::try_from_slice(instruction_data).map_err(|error|{
+        msg!("Program error {:?}",error);
+        InvalidInstructionData
+    })?;
+
+    match instruction {
+        Initializer::HandleDeposit(data)=>{
+            deposite::process(program_id, accounts, &data)
+        }
+        Initializer::HandleBorrow(data)=>{
+            borrow::process(program_id, accounts, &data)
+        }
     }
 }
